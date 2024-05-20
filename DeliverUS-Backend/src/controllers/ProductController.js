@@ -46,6 +46,21 @@ const create = async function (req, res) {
   }
 }
 
+const promocionar = async function (req, res) {
+  try {
+    const product = await Product.findByPk(req.params.productId)
+    if (product.promocionado === true) {
+      product.promocionado = false
+    } else {
+      product.promocionado = true
+    }
+    const updatedProduct = await product.save()
+    res.json(updatedProduct)
+  } catch (err) {
+    res.status(500).send(err)
+  }
+}
+
 const update = async function (req, res) {
   try {
     await Product.update(req.body, { where: { id: req.params.productId } })
@@ -113,6 +128,7 @@ const ProductController = {
   create,
   update,
   destroy,
-  popular
+  popular,
+  promocionar
 }
 export default ProductController

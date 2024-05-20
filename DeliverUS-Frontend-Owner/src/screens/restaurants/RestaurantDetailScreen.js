@@ -4,7 +4,7 @@ import { StyleSheet, View, FlatList, ImageBackground, Image, Pressable } from 'r
 import { showMessage } from 'react-native-flash-message'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 import { getDetail } from '../../api/RestaurantEndpoints'
-import { remove } from '../../api/ProductEndpoints'
+import { remove, promote } from '../../api/ProductEndpoints'
 import ImageCard from '../../components/ImageCard'
 import TextRegular from '../../components/TextRegular'
 import TextSemiBold from '../../components/TextSemibold'
@@ -15,6 +15,7 @@ import defaultProductImage from '../../../assets/product.jpeg'
 export default function RestaurantDetailScreen ({ navigation, route }) {
   const [restaurant, setRestaurant] = useState({})
   const [productToBeDeleted, setProductToBeDeleted] = useState(null)
+  const [productToBePromoted, setProductToBePromoted] = useState(null)
 
   useEffect(() => {
     fetchRestaurantDetail()
@@ -58,14 +59,44 @@ export default function RestaurantDetailScreen ({ navigation, route }) {
     return (
       <ImageCard
         imageUri={item.image ? { uri: process.env.API_BASE_URL + '/' + item.image } : defaultProductImage}
-        title={item.name}
+        title={<View style={[{ flexDirection: 'row' }]}>
+
+           <TextSemiBold textStyle={styles.textTitleBalck}> {item.name} </TextSemiBold>
+           { item.promocionado && restaurant.descuento > 0 &&
+           <TextSemiBold textStyle={styles.textTitleBalck}>{'('}{restaurant.descuento}{'% off)'}</TextSemiBold>}
+           </View>
+  }
       >
         <TextRegular numberOfLines={2}>{item.description}</TextRegular>
+        <View style={[{ flexDirection: 'row' }]}>
         <TextSemiBold textStyle={styles.price}>{item.price.toFixed(2)}€</TextSemiBold>
+        { item.promocionado && restaurant.descuento > 0 &&
+        <TextSemiBold textStyle={{ color: GlobalStyles.brandPrimary }}> Price promoted { item.price.toFixed(2) - item.price.toFixed(2) * (restaurant.descuento / 100) }€</TextSemiBold>}
+        </View>
         {!item.availability &&
           <TextRegular textStyle={styles.availability }>Not available</TextRegular>
         }
          <View style={styles.actionButtonsContainer}>
+         { restaurant.descuento > 0 &&
+         <Pressable
+            onPress={() => { promoteProduct(item) }}
+
+            style={({ pressed }) => [
+              {
+                backgroundColor: pressed
+                  ? GlobalStyles.brandGreen
+                  : GlobalStyles.brandGreenTap
+              },
+              styles.actionButton
+            ]}>
+          <View style={[{ flex: 1, flexDirection: 'row', justifyContent: 'center' }]}>
+            <MaterialCommunityIcons name='pencil' color={'white'} size={20}/>
+            <TextRegular textStyle={styles.text}>
+            {item.promocionado ? 'Unpromote' : 'Promote'}
+            </TextRegular>
+          </View>
+        </Pressable>}
+
           <Pressable
             onPress={() => navigation.navigate('EditProductScreen', { id: item.id })
             }
@@ -122,6 +153,29 @@ export default function RestaurantDetailScreen ({ navigation, route }) {
     } catch (error) {
       showMessage({
         message: `There was an error while retrieving restaurant details (id ${route.params.id}). ${error}`,
+        type: 'error',
+        style: GlobalStyles.flashStyle,
+        titleStyle: GlobalStyles.flashTextStyle
+      })
+    }
+  }
+
+  const promoteProduct = async (product) => {
+    try {
+      await promote(product.id)
+      await fetchRestaurantDetail()
+      setProductToBePromoted(null)
+      showMessage({
+        message: `Product ${product.name} succesfully ${product.promocionado ? 'Unpromote' : 'Promote'}`,
+        type: 'success',
+        style: GlobalStyles.flashStyle,
+        titleStyle: GlobalStyles.flashTextStyle
+      })
+    } catch (error) {
+      console.log(error)
+      setProductToBePromoted(null)
+      showMessage({
+        message: `Product ${product.name} could not be promoted.`,
         type: 'error',
         style: GlobalStyles.flashStyle,
         titleStyle: GlobalStyles.flashTextStyle
@@ -205,6 +259,10 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: 'white'
   },
+  textTitleBalck: {
+    fontSize: 20,
+    color: 'black'
+  },
   emptyList: {
     textAlign: 'center',
     padding: 50
@@ -237,7 +295,7 @@ const styles = StyleSheet.create({
     padding: 10,
     alignSelf: 'center',
     flexDirection: 'column',
-    width: '50%'
+    width: '35%'
   },
   actionButtonsContainer: {
     flexDirection: 'row',

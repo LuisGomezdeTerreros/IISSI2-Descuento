@@ -48,7 +48,8 @@ const update = [
   }).withMessage('Please upload an image with format (jpeg, png).'),
   check('logo').custom((value, { req }) => {
     return checkFileMaxSize(req, 'logo', maxFileSize)
-  }).withMessage('Maximum file size of ' + maxFileSize / 1000000 + 'MB')
+  }).withMessage('Maximum file size of ' + maxFileSize / 1000000 + 'MB'),
+  check('descuento').optional({ nullable: true, checkFalsy: true }).isInt({ min: 0, max: 100 }).toInt()
 ]
 
 export { create, update }

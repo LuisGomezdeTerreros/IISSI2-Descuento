@@ -23,6 +23,19 @@ const checkProductRestaurantOwnership = async (req, res, next) => {
     return res.status(500).send(err)
   }
 }
+const canBePromoted = async (req, res, next) => {
+  try {
+    const product = await Product.findByPk(req.params.productId)
+    const restaurant = await Restaurant.findByPk(product.restaurantId)
+    if (restaurant.descuento > 0) {
+      return next()
+    } else {
+      return res.status(403).send('cannot be promoted discount 0 ')
+    }
+  } catch (err) {
+    return res.status(500).send(err)
+  }
+}
 
 const checkProductHasNotBeenOrdered = async (req, res, next) => {
   try {
@@ -37,4 +50,4 @@ const checkProductHasNotBeenOrdered = async (req, res, next) => {
   }
 }
 
-export { checkProductOwnership, checkProductRestaurantOwnership, checkProductHasNotBeenOrdered }
+export { checkProductOwnership, checkProductRestaurantOwnership, checkProductHasNotBeenOrdered, canBePromoted }
